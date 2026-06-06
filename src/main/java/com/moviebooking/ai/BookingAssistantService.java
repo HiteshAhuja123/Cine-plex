@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.method.MethodToolCallbackProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 /**
@@ -46,8 +47,10 @@ public class BookingAssistantService {
     private final ChatClient chatClient;
     private final BookingTools bookingTools;
 
-    // ChatClient.Builder is null when GEMINI_API_KEY is absent and Spring AI skips auto-config.
-    public BookingAssistantService(@Autowired(required = false) ChatClient.Builder chatClientBuilder,
+    // @Autowired on the constructor tells Spring which one to use (two constructors exist).
+    // @Nullable on the builder lets Spring pass null when GEMINI_API_KEY is absent.
+    @Autowired
+    public BookingAssistantService(@Nullable ChatClient.Builder chatClientBuilder,
                                    BookingTools bookingTools) {
         this.chatClient = chatClientBuilder != null ? chatClientBuilder.build() : null;
         this.bookingTools = bookingTools;
