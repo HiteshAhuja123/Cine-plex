@@ -14,10 +14,14 @@ spring:
       keepalive-time: 60000
 
   jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       # Schema created on first deploy; subsequent restarts leave existing data intact
       ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 logging:
   level:
