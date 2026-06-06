@@ -20,6 +20,8 @@ public interface ShowRepository extends JpaRepository<Show, Long> {
     Page<Show> findByMovieIdAndStatusAndStartTimeAfter(
             Long movieId, ShowStatus status, LocalDateTime after, Pageable pageable);
 
+    long countByStartTimeAfter(LocalDateTime after);
+
     List<Show> findByMovieIdAndStatus(Long movieId, ShowStatus status);
 
     // ── Custom JPQL — shows in a city after a given time ─────────────────────

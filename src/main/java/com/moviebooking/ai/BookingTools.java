@@ -3,6 +3,7 @@ package com.moviebooking.ai;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.moviebooking.dto.request.ConfirmBookingRequest;
 import com.moviebooking.dto.request.HoldSeatsRequest;
+import com.moviebooking.exception.AppException;
 import com.moviebooking.service.BookingService;
 import com.moviebooking.service.MovieService;
 import com.moviebooking.service.ShowService;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * AI-callable tools for the booking assistant.
@@ -51,7 +53,11 @@ public class BookingTools {
     @Tool(description = "Search for movies by keyword (title or genre). Returns matching movies with IDs, titles, genres, and ratings. Always call this first before listing shows.")
     public String searchMovies(String keyword) {
         log.debug("[AI Tool] searchMovies keyword={}", keyword);
-        return toJson(movieService.searchMovies(keyword, PageRequest.of(0, 5)).getContent());
+        try {
+            return toJson(movieService.searchMovies(keyword, PageRequest.of(0, 5)).getContent());
+        } catch (AppException e) {
+            return toJson(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -60,7 +66,11 @@ public class BookingTools {
     @Tool(description = "List upcoming shows for a movie. Requires a movieId from searchMovies. Returns show IDs, start times, prices, theater name, and available seat count.")
     public String listShows(Long movieId) {
         log.debug("[AI Tool] listShows movieId={}", movieId);
-        return toJson(showService.getShowsForMovie(movieId, PageRequest.of(0, 5)).getContent());
+        try {
+            return toJson(showService.getShowsForMovie(movieId, PageRequest.of(0, 5)).getContent());
+        } catch (AppException e) {
+            return toJson(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -69,7 +79,11 @@ public class BookingTools {
     @Tool(description = "Get available seats for a show. Returns seat IDs, seat codes (e.g. A1), types (REGULAR/PREMIUM), and prices. Use the showSeatId values when calling holdSeats.")
     public String checkSeatAvailability(Long showId) {
         log.debug("[AI Tool] checkSeatAvailability showId={}", showId);
-        return toJson(showService.getAvailableSeats(showId));
+        try {
+            return toJson(showService.getAvailableSeats(showId));
+        } catch (AppException e) {
+            return toJson(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -81,7 +95,11 @@ public class BookingTools {
     @Tool(description = "Hold specific seats for a user. showSeatIds MUST be IDs obtained from checkSeatAvailability — never invent them. Returns a booking with a 5-minute hold window. The bookingId is needed for confirmBooking.")
     public String holdSeats(Long userId, Long showId, List<Long> showSeatIds) {
         log.debug("[AI Tool] holdSeats userId={} showId={} seats={}", userId, showId, showSeatIds);
-        return toJson(bookingService.holdSeats(new HoldSeatsRequest(userId, showId, showSeatIds)));
+        try {
+            return toJson(bookingService.holdSeats(new HoldSeatsRequest(userId, showId, showSeatIds)));
+        } catch (AppException e) {
+            return toJson(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -90,7 +108,11 @@ public class BookingTools {
     @Tool(description = "Confirm a held booking to finalise the ticket purchase. Requires bookingId from holdSeats and the userId. Returns the confirmed booking with all seat details.")
     public String confirmBooking(Long bookingId, Long userId) {
         log.debug("[AI Tool] confirmBooking bookingId={} userId={}", bookingId, userId);
-        return toJson(bookingService.confirmBooking(bookingId, new ConfirmBookingRequest(userId)));
+        try {
+            return toJson(bookingService.confirmBooking(bookingId, new ConfirmBookingRequest(userId)));
+        } catch (AppException e) {
+            return toJson(Map.of("error", e.getMessage()));
+        }
     }
 
     private String toJson(Object obj) {

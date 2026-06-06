@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, Film } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Movie, Page } from "@/lib/types";
-import { MovieCardSkeleton } from "@/components/Spinner";
+import { MovieCardSkeleton, Spinner } from "@/components/Spinner";
 
 const GRADIENT_PALETTES = [
   "linear-gradient(135deg,#1a1a3e,#2d1b5c)",
@@ -91,22 +91,40 @@ export default function MoviesPage() {
   const [page, setPage] = useState(0);
   const [data, setData] = useState<Page<Movie> | null>(null);
   const [loading, setLoading] = useState(true);
+  const [waking, setWaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Render free tier spins down after inactivity; retry up to 3× with escalating
+  // delays so the first load survives a cold start (~30–60 s) without showing an error.
+  const RETRY_DELAYS_MS = [6000, 10000, 15000];
 
   const load = useCallback(async (q: string, p: number) => {
     setLoading(true);
+    setWaking(false);
     setError(null);
-    try {
-      const res = await api.get<Page<Movie>>(
-        `/movies?keyword=${encodeURIComponent(q)}&page=${p}&size=12&sort=averageRating,desc`
-      );
-      setData(res);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to load movies");
-    } finally {
-      setLoading(false);
+
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      try {
+        const res = await api.get<Page<Movie>>(
+          `/movies?keyword=${encodeURIComponent(q)}&page=${p}&size=12&sort=averageRating,desc`
+        );
+        setData(res);
+        setLoading(false);
+        setWaking(false);
+        return;
+      } catch (e: unknown) {
+        if (attempt < RETRY_DELAYS_MS.length) {
+          setLoading(false);
+          setWaking(true);
+          await new Promise<void>((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        } else {
+          setLoading(false);
+          setWaking(false);
+          setError(e instanceof Error ? e.message : "Failed to load movies");
+        }
+      }
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load(query, page);
@@ -178,6 +196,12 @@ export default function MoviesPage() {
           {Array.from({ length: 12 }).map((_, i) => (
             <MovieCardSkeleton key={i} />
           ))}
+        </div>
+      ) : waking ? (
+        <div className="flex flex-col items-center gap-3 py-20 text-[var(--text-2)]">
+          <Spinner size={28} />
+          <p className="text-sm font-medium">Waking up the server, one moment…</p>
+          <p className="text-xs text-[var(--text-3)]">Free-tier backends sleep after inactivity.</p>
         </div>
       ) : error ? (
         <div className="text-center py-16">

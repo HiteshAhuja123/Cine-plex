@@ -2,7 +2,6 @@ package com.moviebooking.config;
 
 import com.moviebooking.entity.*;
 import com.moviebooking.entity.enums.SeatType;
-import com.moviebooking.entity.enums.ShowStatus;
 import com.moviebooking.pricing.PricingStrategyFactory;
 import com.moviebooking.repository.*;
 import org.slf4j.Logger;
@@ -21,8 +20,9 @@ import java.util.List;
 /**
  * Seeds realistic demo data on first startup so the live demo is never empty.
  *
- * <p>Guard: checks {@code movieRepository.count() == 0} before inserting,
- * so restarts with persisted data (prod) skip the seed safely.
+ * <p>Full seed guard: runs only when {@code movieRepository.count() == 0}.
+ * Show re-seed: if movies exist but all shows are in the past (deploy was weeks ago),
+ * old shows/bookings are wiped and fresh shows are created relative to now.
  */
 @Component
 public class DataInitializer {
@@ -35,6 +35,7 @@ public class DataInitializer {
     private final SeatRepository seatRepository;
     private final ShowRepository showRepository;
     private final ShowSeatRepository showSeatRepository;
+    private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final PricingStrategyFactory pricingFactory;
 
@@ -44,6 +45,7 @@ public class DataInitializer {
                            SeatRepository seatRepository,
                            ShowRepository showRepository,
                            ShowSeatRepository showSeatRepository,
+                           BookingRepository bookingRepository,
                            UserRepository userRepository,
                            PricingStrategyFactory pricingFactory) {
         this.movieRepository = movieRepository;
@@ -52,6 +54,7 @@ public class DataInitializer {
         this.seatRepository = seatRepository;
         this.showRepository = showRepository;
         this.showSeatRepository = showSeatRepository;
+        this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.pricingFactory = pricingFactory;
     }
@@ -59,15 +62,26 @@ public class DataInitializer {
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void seed() {
-        if (movieRepository.count() > 0) {
-            log.info("DataInitializer: data already present, skipping seed.");
+        if (movieRepository.count() == 0) {
+            log.info("DataInitializer: fresh DB — seeding all demo data...");
+            seedAll();
             return;
         }
 
-        log.info("DataInitializer: seeding demo data...");
+        // Movies exist but shows may have aged out (seeded once, dates relative to first boot).
+        // Re-seed shows so the demo always has bookable content.
+        if (showRepository.count() > 0 &&
+                showRepository.countByStartTimeAfter(LocalDateTime.now()) == 0) {
+            log.info("DataInitializer: all shows are in the past — re-seeding shows...");
+            reseedShows();
+        } else {
+            log.info("DataInitializer: data present and shows are current, skipping seed.");
+        }
+    }
 
+    private void seedAll() {
         // ── Users ──────────────────────────────────────────────────────────────
-        List<User> users = userRepository.saveAll(List.of(
+        userRepository.saveAll(List.of(
                 new User("Alice Johnson", "alice@example.com", "+1-555-0101"),
                 new User("Bob Smith", "bob@example.com", "+1-555-0202"),
                 new User("Carol White", "carol@example.com", "+1-555-0303")
@@ -112,10 +126,39 @@ public class DataInitializer {
         createSeats(screen2, 5, 8);    // 5 rows × 8 cols  = 40 seats
         createSeats(screen3, 5, 10);   // 5 rows × 10 cols = 50 seats
 
-        // ── Shows over the next 7 days ────────────────────────────────────────
+        List<Show> shows = createShows(movies);
+        createShowSeats(shows);
+
+        log.info("DataInitializer: seeded {} movies, 2 theaters, 3 screens, {} shows.",
+                movies.size(), shows.size());
+    }
+
+    /**
+     * Wipes all bookings, show-seats, and shows, then recreates shows relative to now.
+     * Movies, theaters, screens, and seats are preserved.
+     */
+    private void reseedShows() {
+        // Delete in FK-safe order: bookings (cascades to booking_seats) → show_seats → shows
+        bookingRepository.deleteAll();
+        showSeatRepository.deleteAll();
+        showRepository.deleteAll();
+
+        List<Movie> movies = movieRepository.findAll();
+        List<Show> shows = createShows(movies);
+        createShowSeats(shows);
+
+        log.info("DataInitializer: re-seeded {} shows with fresh dates.", shows.size());
+    }
+
+    private List<Show> createShows(List<Movie> movies) {
+        List<Screen> screens = screenRepository.findAll();
+        Screen screen1 = screens.get(0);
+        Screen screen2 = screens.get(1);
+        Screen screen3 = screens.get(2);
+
         LocalDateTime base = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
 
-        List<Show> shows = showRepository.saveAll(List.of(
+        return showRepository.saveAll(List.of(
                 new Show(movies.get(0), screen1, base.plusDays(1),
                         base.plusDays(1).plusMinutes(148), new BigDecimal("15.00"), "English"),
                 new Show(movies.get(0), screen1, base.plusDays(1).plusHours(4),
@@ -134,8 +177,9 @@ public class DataInitializer {
                 new Show(movies.get(2), screen1, base.plusDays(6),
                         base.plusDays(6).plusMinutes(132), new BigDecimal("13.00"), "Korean")
         ));
+    }
 
-        // ── ShowSeats for each show ────────────────────────────────────────────
+    private void createShowSeats(List<Show> shows) {
         for (Show show : shows) {
             List<Seat> seats = seatRepository.findByScreenId(show.getScreen().getId());
             List<ShowSeat> showSeats = seats.stream()
@@ -148,9 +192,6 @@ public class DataInitializer {
                     .toList();
             showSeatRepository.saveAll(showSeats);
         }
-
-        log.info("DataInitializer: seeded {} movies, {} theaters, {} screens, {} shows.",
-                movies.size(), 2, 3, shows.size());
     }
 
     /** Creates rows A–(rowLabel) × columns 1–cols, last 2 rows are PREMIUM. */
@@ -158,7 +199,6 @@ public class DataInitializer {
         List<Seat> seats = new ArrayList<>();
         for (int r = 0; r < rows; r++) {
             String rowLabel = String.valueOf((char) ('A' + r));
-            // Last 2 rows are premium (closer to screen in a traditional layout)
             SeatType type = (r >= rows - 2) ? SeatType.PREMIUM : SeatType.REGULAR;
             for (int c = 1; c <= cols; c++) {
                 seats.add(new Seat(screen, rowLabel, c, type));

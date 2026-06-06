@@ -53,6 +53,12 @@ public class BookingAssistantService {
         this.bookingTools = bookingTools;
     }
 
+    // Package-private: allows unit tests to inject a pre-built mock ChatClient directly.
+    BookingAssistantService(ChatClient chatClient, BookingTools bookingTools) {
+        this.chatClient = chatClient;
+        this.bookingTools = bookingTools;
+    }
+
     /**
      * Runs the user's natural-language request through the agentic tool loop.
      *
