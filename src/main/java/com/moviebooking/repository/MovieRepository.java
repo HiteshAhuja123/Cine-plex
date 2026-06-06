@@ -23,6 +23,8 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     Page<Movie> findByActiveTrue(Pageable pageable);
 
+    boolean existsByTitle(String title);
+
     // ── Custom JPQL query ─────────────────────────────────────────────────────
 
     /**
