@@ -197,7 +197,7 @@ export default function MovieShowsPage() {
                 {/* Price */}
                 <div className="text-right min-w-[60px]">
                   <p className="text-[10px] text-[var(--text-3)]">from</p>
-                  <p className="text-base font-bold">${parseFloat(String(show.basePrice)).toFixed(2)}</p>
+                  <p className="text-base font-bold">₹{parseFloat(String(show.basePrice)).toFixed(0)}</p>
                 </div>
               </motion.div>
             );
