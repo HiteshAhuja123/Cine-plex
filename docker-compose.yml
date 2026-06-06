@@ -1,0 +1,42 @@
+version: "3.9"
+
+# Brings up the full stack locally with a single `docker compose up`
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: moviebooking-db
+    environment:
+      POSTGRES_DB: moviebooking
+      POSTGRES_USER: movieuser
+      POSTGRES_PASSWORD: moviepass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movieuser -d moviebooking"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: moviebooking-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/moviebooking
+      SPRING_DATASOURCE_USERNAME: movieuser
+      SPRING_DATASOURCE_PASSWORD: moviepass
+      # Optional — set this to enable the AI assistant
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    restart: on-failure
+
+volumes:
+  postgres_data:

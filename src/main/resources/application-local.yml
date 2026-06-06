@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/moviebooking
+    username: movieuser
+    password: moviepass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      # Drops and recreates schema on every restart — ideal for local dev
+      ddl-auto: create-drop
+    show-sql: true
+
+logging:
+  level:
+    com.moviebooking: DEBUG
+    org.hibernate.SQL: DEBUG

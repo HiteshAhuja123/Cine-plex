@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    # Neon Postgres — injected by Render as environment variables
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      # Neon free tier allows 20 connections; stay well under the ceiling
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      # Neon suspends after 5 min of inactivity — keep-alive prevents cold reconnect errors
+      keepalive-time: 60000
+
+  jpa:
+    hibernate:
+      # Schema created on first deploy; subsequent restarts leave existing data intact
+      ddl-auto: update
+    show-sql: false
+
+logging:
+  level:
+    com.moviebooking: INFO
+    org.hibernate.SQL: WARN

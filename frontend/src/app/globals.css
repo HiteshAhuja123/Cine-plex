@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #0d0d1a;
+  --color-surface: #1a1a2e;
+  --color-surface2: #1e1e35;
+  --color-border: #2a2a4a;
+  --color-cinema-red: #e50914;
+  --color-cinema-gold: #f5c518;
+  --color-cinema-green: #1db954;
+  --color-text1: #ffffff;
+  --color-text2: #a0a0b8;
+  --color-text3: #60607a;
+}
+
+:root {
+  --bg: #0d0d1a;
+  --surface: #1a1a2e;
+  --surface-2: #1e1e35;
+  --border: #2a2a4a;
+  --red: #e50914;
+  --gold: #f5c518;
+  --green: #1db954;
+  --text: #ffffff;
+  --text-2: #a0a0b8;
+  --text-3: #60607a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface) 25%,
+    var(--surface-2) 50%,
+    var(--surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Seat styles (used in seat grid) */
+.seat {
+  width: 28px;
+  height: 26px;
+  border-radius: 5px 5px 3px 3px;
+  cursor: default;
+  transition: transform 0.1s;
+  flex-shrink: 0;
+}
+
+.seat.available {
+  background: #1e4d27;
+  cursor: pointer;
+}
+
+.seat.available:hover {
+  background: #286634;
+  transform: scale(1.18);
+}
+
+.seat.premium.available {
+  background: #3d1a5c;
+}
+
+.seat.premium.available:hover {
+  background: #552280;
+}
+
+.seat.selected {
+  background: var(--gold);
+  cursor: pointer;
+}
+
+.seat.held {
+  background: #3a2800;
+  cursor: not-allowed;
+}
+
+.seat.booked {
+  background: #1e1e1e;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .seat {
+    width: 24px;
+    height: 22px;
+  }
+}
+
+/* Button utilities */
+.btn-primary {
+  background-color: var(--red);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #c10812;
+}
+
+.btn-secondary {
+  background-color: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-secondary:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.btn-gold {
+  background-color: var(--gold);
+  color: #1a1000;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.15s;
+}
+.btn-gold:hover:not(:disabled) {
+  background-color: #d4a800;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: movie-booking
+
+  profiles:
+    active: local
+
+  # JPA / Hibernate
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+
+  # Jackson
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  # Virtual threads (Java 21) — makes Tomcat use VirtualThread per request
+  threads:
+    virtual:
+      enabled: true
+
+  # Spring AI — Gemini via OpenAI-compatible endpoint (Spring AI 1.0.x)
+  # Google exposes Gemini models at an OpenAI-compatible URL so the openai starter
+  # works with your GEMINI_API_KEY from aistudio.google.com — no GCP account needed.
+  # To upgrade to 1.1.x native Gemini: swap starter + change prefix to spring.ai.google.gemini.*
+  ai:
+    openai:
+      api-key: ${GEMINI_API_KEY:missing}
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      chat:
+        options:
+          model: gemini-2.0-flash
+          temperature: 0.7
+
+# Actuator — health + info only in prod
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+
+# Swagger UI
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    com.moviebooking: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
