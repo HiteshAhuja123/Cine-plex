@@ -12,11 +12,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   const start = Date.now();
   let res: Response;
-  let json: { success: boolean; data?: unknown; message?: string };
 
   try {
     res = await fetch("/api" + path, opts);
-    json = await res.json();
   } catch (e) {
     emitTechPanel({
       type: "update",
@@ -31,6 +29,20 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   }
 
   const durationMs = Date.now() - start;
+  const text = await res.text();
+
+  // Parse body — handle non-JSON gracefully (HTML error pages, plain-text proxy errors, etc.)
+  let json: { success: boolean; data?: unknown; message?: string };
+  try {
+    json = JSON.parse(text);
+  } catch {
+    const snippet = text.replace(/<[^>]+>/g, "").trim().slice(0, 160) || `HTTP ${res.status}`;
+    emitTechPanel({
+      type: "update",
+      entry: { ...entry, status: "error", statusCode: res.status, durationMs, error: snippet },
+    });
+    throw new Error(snippet);
+  }
 
   if (!res.ok || !json.success) {
     emitTechPanel({
@@ -54,7 +66,6 @@ export async function rawPost<T>(path: string, body: unknown, raceLabel?: string
 
   const start = Date.now();
   let res: Response;
-  let json: { success: boolean; data?: unknown; message?: string };
 
   try {
     res = await fetch("/api" + path, {
@@ -62,7 +73,6 @@ export async function rawPost<T>(path: string, body: unknown, raceLabel?: string
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    json = await res.json();
   } catch (e) {
     emitTechPanel({
       type: "update",
@@ -77,6 +87,19 @@ export async function rawPost<T>(path: string, body: unknown, raceLabel?: string
   }
 
   const durationMs = Date.now() - start;
+  const text = await res.text();
+
+  let json: { success: boolean; data?: unknown; message?: string };
+  try {
+    json = JSON.parse(text);
+  } catch {
+    const snippet = text.replace(/<[^>]+>/g, "").trim().slice(0, 160) || `HTTP ${res.status}`;
+    emitTechPanel({
+      type: "update",
+      entry: { ...entry, status: "error", statusCode: res.status, durationMs, error: snippet },
+    });
+    throw new Error(snippet);
+  }
 
   if (!res.ok || !json.success) {
     emitTechPanel({
