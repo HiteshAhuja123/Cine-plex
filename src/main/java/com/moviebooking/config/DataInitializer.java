@@ -184,21 +184,17 @@ public class DataInitializer {
         log.info("DataInitializer: re-seeded {} shows with fresh dates.", shows.size());
     }
 
-    /** Wipes all data in FK-safe order before a full re-seed. */
+    /** Wipes all data and resets sequences before a full re-seed. */
     private void purgeAll() {
-        // Native SQL DELETEs execute immediately (bypass JPA buffering) in FK-safe order.
-        // JPA's deleteAll() queues deletes and can cause constraint violations when inserts
-        // follow in the same transaction — native queries avoid that entirely.
-        entityManager.createNativeQuery("DELETE FROM booking_seats").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM bookings").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM show_seats").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM shows").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM seats").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM screens").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM theaters").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM movies").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
-        entityManager.clear(); // clear first-level cache so subsequent inserts start fresh
+        // TRUNCATE … RESTART IDENTITY CASCADE: clears all rows AND resets auto-increment
+        // sequences in one statement. Sequences must restart so re-seeded demo users
+        // always get IDs 1/2/3 — matching the "Alice=1 Bob=2 Carol=3" hint in the UI.
+        // CASCADE handles FK dependencies; no need to list tables in FK-safe order.
+        entityManager.createNativeQuery(
+                "TRUNCATE TABLE booking_seats, bookings, show_seats, shows, " +
+                "seats, screens, theaters, movies, users RESTART IDENTITY CASCADE")
+                .executeUpdate();
+        entityManager.clear();
     }
 
     private List<Show> createShows(List<Movie> movies) {
