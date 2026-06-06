@@ -59,7 +59,7 @@ function SeatGrid({
                   ]
                     .filter(Boolean)
                     .join(" ");
-                  const label = `${seat.seatCode} · ${seat.seatType === "PREMIUM" ? "Premium" : "Regular"} · $${parseFloat(String(seat.price)).toFixed(2)}`;
+                  const label = `${seat.seatCode} · ${seat.seatType === "PREMIUM" ? "Premium" : "Regular"} · ₹${parseFloat(String(seat.price)).toFixed(0)}`;
                   return (
                     <motion.div
                       key={seat.showSeatId}
@@ -121,7 +121,7 @@ function BookingSidebar({
             {selected.map((s) => (
               <div key={s.showSeatId} className="flex justify-between py-1.5 border-b border-[var(--border)] last:border-0 text-sm">
                 <span className="font-mono text-xs">{s.seatCode}</span>
-                <span className="text-[var(--text-2)] text-xs">${parseFloat(String(s.price)).toFixed(2)}</span>
+                <span className="text-[var(--text-2)] text-xs">₹{parseFloat(String(s.price)).toFixed(0)}</span>
               </div>
             ))}
           </div>
@@ -135,7 +135,7 @@ function BookingSidebar({
           animate={{ scale: 1 }}
           className="text-xl font-black text-[var(--gold)]"
         >
-          ${total.toFixed(2)}
+          ₹{total.toFixed(0)}
         </motion.span>
       </div>
       <button
@@ -224,7 +224,7 @@ function HoldView({
             <div key={s.seatCode} className="flex justify-between py-2 border-b border-[var(--border)] last:border-0 text-sm text-[var(--text-2)]">
               <span className="font-mono text-xs">{s.seatCode}</span>
               <span>{s.seatType === "PREMIUM" ? "★ Premium" : "Regular"}</span>
-              <span>${parseFloat(String(s.price)).toFixed(2)}</span>
+              <span>₹{parseFloat(String(s.price)).toFixed(0)}</span>
             </div>
           ))}
         </div>
@@ -232,7 +232,7 @@ function HoldView({
         {/* Total */}
         <div className="flex justify-between font-bold text-base pb-4 border-b border-[var(--border)] mb-4">
           <span>Total</span>
-          <span className="text-[var(--gold)] text-xl">${parseFloat(String(booking.totalAmount)).toFixed(2)}</span>
+          <span className="text-[var(--gold)] text-xl">₹{parseFloat(String(booking.totalAmount)).toFixed(0)}</span>
         </div>
 
         {/* Actions */}
@@ -303,7 +303,7 @@ function ConfirmationView({ booking, onBack }: { booking: Booking; onBack: () =>
           { label: "Theater", value: booking.theaterName },
           { label: "Date & Time", value: fmt },
           { label: "Seats", value: seats, mono: true },
-          { label: "Total", value: `$${parseFloat(String(booking.totalAmount)).toFixed(2)}`, gold: true },
+          { label: "Total", value: `₹${parseFloat(String(booking.totalAmount)).toFixed(0)}`, gold: true },
         ].map(({ label, value, mono, gold }) => (
           <div key={label} className="flex justify-between mb-2 text-sm">
             <span className="text-[var(--text-2)]">{label}</span>

@@ -145,7 +145,7 @@ export default function BookingsPage() {
                 {/* Footer */}
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-[var(--gold)]">
-                    ${parseFloat(String(b.totalAmount)).toFixed(2)}
+                    ₹{parseFloat(String(b.totalAmount)).toFixed(0)}
                   </span>
                   {canCancel && (
                     <button

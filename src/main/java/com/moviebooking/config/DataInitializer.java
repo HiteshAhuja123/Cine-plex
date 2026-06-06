@@ -216,40 +216,40 @@ public class DataInitializer {
         LocalDateTime base = LocalDateTime.now().withHour(10).withMinute(0).withSecond(0).withNano(0);
 
         return showRepository.saveAll(List.of(
-                // IMAX Screen 1 — blockbusters
+                // IMAX Screen 1 — blockbusters (₹450 base)
                 new Show(byTitle.apply("Inception"), screen1,
                         base.plusDays(1), base.plusDays(1).plusMinutes(148),
-                        new BigDecimal("18.00"), "English"),
+                        new BigDecimal("450.00"), "English"),
                 new Show(byTitle.apply("The Dark Knight"), screen1,
                         base.plusDays(1).plusHours(4), base.plusDays(1).plusHours(4).plusMinutes(152),
-                        new BigDecimal("18.00"), "English"),
+                        new BigDecimal("450.00"), "English"),
                 new Show(byTitle.apply("Oppenheimer"), screen1,
                         base.plusDays(2), base.plusDays(2).plusMinutes(180),
-                        new BigDecimal("18.00"), "English"),
-                // Screen 2 — mix
+                        new BigDecimal("500.00"), "English"),
+                // Screen 2 — standard (₹250 base)
                 new Show(byTitle.apply("Interstellar"), screen2,
                         base.plusDays(1), base.plusDays(1).plusMinutes(169),
-                        new BigDecimal("14.00"), "English"),
+                        new BigDecimal("250.00"), "English"),
                 new Show(byTitle.apply("Spider-Man: No Way Home"), screen2,
                         base.plusDays(2), base.plusDays(2).plusMinutes(148),
-                        new BigDecimal("14.00"), "English"),
+                        new BigDecimal("250.00"), "English"),
                 new Show(byTitle.apply("Top Gun: Maverick"), screen2,
                         base.plusDays(3), base.plusDays(3).plusMinutes(130),
-                        new BigDecimal("14.00"), "English"),
-                // Screen A — Starlight
+                        new BigDecimal("250.00"), "English"),
+                // Screen A — Starlight (₹300 base)
                 new Show(byTitle.apply("Dune: Part Two"), screen3,
                         base.plusDays(1), base.plusDays(1).plusMinutes(166),
-                        new BigDecimal("15.00"), "English"),
+                        new BigDecimal("350.00"), "English"),
                 new Show(byTitle.apply("Parasite"), screen3,
                         base.plusDays(2), base.plusDays(2).plusMinutes(132),
-                        new BigDecimal("13.00"), "Korean"),
+                        new BigDecimal("300.00"), "Korean"),
                 // Weekend shows for pricing strategy demo
                 new Show(byTitle.apply("The Dark Knight"), screen1,
                         base.plusDays(5), base.plusDays(5).plusMinutes(152),
-                        new BigDecimal("18.00"), "English"),
+                        new BigDecimal("450.00"), "English"),
                 new Show(byTitle.apply("Dune: Part Two"), screen3,
                         base.plusDays(6), base.plusDays(6).plusMinutes(166),
-                        new BigDecimal("15.00"), "English")
+                        new BigDecimal("350.00"), "English")
         ));
     }
 
