@@ -4,6 +4,8 @@ import com.moviebooking.entity.*;
 import com.moviebooking.entity.enums.SeatType;
 import com.moviebooking.pricing.PricingStrategyFactory;
 import com.moviebooking.repository.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -33,6 +35,9 @@ import java.util.Map;
 public class DataInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     // Verified TMDB poster hashes fetched directly from themoviedb.org
     private static final Map<String, String> POSTER_URLS = Map.of(
@@ -189,6 +194,10 @@ public class DataInitializer {
         theaterRepository.deleteAll();
         movieRepository.deleteAll();
         userRepository.deleteAll();
+        // Flush deletes to DB immediately so the subsequent seed inserts don't hit
+        // unique-constraint violations from rows still buffered in the first-level cache.
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private List<Show> createShows(List<Movie> movies) {
