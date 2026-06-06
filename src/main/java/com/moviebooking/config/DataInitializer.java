@@ -186,18 +186,19 @@ public class DataInitializer {
 
     /** Wipes all data in FK-safe order before a full re-seed. */
     private void purgeAll() {
-        bookingRepository.deleteAll();
-        showSeatRepository.deleteAll();
-        showRepository.deleteAll();
-        seatRepository.deleteAll();
-        screenRepository.deleteAll();
-        theaterRepository.deleteAll();
-        movieRepository.deleteAll();
-        userRepository.deleteAll();
-        // Flush deletes to DB immediately so the subsequent seed inserts don't hit
-        // unique-constraint violations from rows still buffered in the first-level cache.
-        entityManager.flush();
-        entityManager.clear();
+        // Native SQL DELETEs execute immediately (bypass JPA buffering) in FK-safe order.
+        // JPA's deleteAll() queues deletes and can cause constraint violations when inserts
+        // follow in the same transaction — native queries avoid that entirely.
+        entityManager.createNativeQuery("DELETE FROM booking_seats").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM bookings").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM show_seats").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM shows").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM seats").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM screens").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM theaters").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM movies").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM users").executeUpdate();
+        entityManager.clear(); // clear first-level cache so subsequent inserts start fresh
     }
 
     private List<Show> createShows(List<Movie> movies) {
