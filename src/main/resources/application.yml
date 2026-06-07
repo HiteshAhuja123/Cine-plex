@@ -25,24 +25,18 @@ spring:
     virtual:
       enabled: true
 
-  # Spring AI — Gemini via OpenAI-compatible endpoint + MCP server
-  # Google exposes Gemini models at an OpenAI-compatible URL so the openai starter
-  # works with your GEMINI_API_KEY from aistudio.google.com — no GCP account needed.
-  # To upgrade to 1.1.x native Gemini: swap starter + change prefix to spring.ai.google.gemini.*
-  #
+  # Spring AI — Groq via OpenAI-compatible endpoint + MCP server
   # MCP Server (SSE transport):
   #   GET  /mcp/sse      — client opens a persistent SSE stream
   #   POST /mcp/messages — client sends tool call requests
   ai:
     openai:
-      api-key: ${GEMINI_API_KEY:missing}
-      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      api-key: ${GROQ_API_KEY:missing}
+      base-url: https://api.groq.com/openai
       chat:
         options:
-          model: gemini-2.0-flash
+          model: llama-3.3-70b-versatile
           # Keep temperature low — tool calling requires deterministic JSON output.
-          # 0.7 causes Gemini to emit <function=name{...}> text-format calls instead
-          # of proper JSON, resulting in HTTP 400 tool_use_failed from the API.
           temperature: 0.1
     mcp:
       server:
