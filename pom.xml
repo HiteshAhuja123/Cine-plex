@@ -85,6 +85,17 @@
             <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
 
+        <!--
+            MCP Server — exposes the same booking tools over the Model Context Protocol.
+            spring-ai-starter-mcp-server-webmvc uses Servlet SSE (SseEmitter), not WebFlux,
+            so it's safe to add alongside spring-boot-starter-web.
+            Endpoint: GET /mcp/sse  (client subscribe)  POST /mcp/messages (client send)
+        -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+        </dependency>
+
         <!-- ===== OpenAPI / Swagger UI ===== -->
         <dependency>
             <groupId>org.springdoc</groupId>

@@ -78,13 +78,83 @@ in this project to the exact file(s) where a reviewer can verify it.
 
 | Concept | Where to find it | Notes |
 |---------|-----------------|-------|
-| **Tool registration** | [`BookingToolsConfig.java`](src/main/java/com/moviebooking/ai/BookingToolsConfig.java) | `FunctionCallbackWrapper.builder(fn).withName(...).withDescription(...)` — LLM receives schema |
+| **@Tool annotation** | [`BookingTools.java`](src/main/java/com/moviebooking/ai/BookingTools.java) | 5 `@Tool`-annotated methods; Spring AI 1.0.0 style — not `@Bean Function<I,O>` |
+| **Tool registration** | [`BookingAssistantService.java`](src/main/java/com/moviebooking/ai/BookingAssistantService.java) | `MethodToolCallbackProvider.builder().toolObjects(bookingTools).build()` wired inline per request |
 | **Tool implementations** | [`BookingTools.java`](src/main/java/com/moviebooking/ai/BookingTools.java) | 5 tools: searchMovies, listShows, checkSeatAvailability, holdSeats, confirmBooking |
-| **Agentic chat loop** | [`BookingAssistantService.java`](src/main/java/com/moviebooking/ai/BookingAssistantService.java) | `chatClient.prompt().functions(...).call()` — Gemini plans tool calls autonomously |
+| **Agentic chat loop** | [`BookingAssistantService.java`](src/main/java/com/moviebooking/ai/BookingAssistantService.java) | `chatClient.prompt().toolCallbacks(...).call()` — Gemini plans tool calls autonomously |
 | **System prompt** | [`BookingAssistantService.java`](src/main/java/com/moviebooking/ai/BookingAssistantService.java) | Constrains LLM to only use DB-verified data; enforces tool call ordering |
-| **AI routes through real service** | [`BookingTools.java`](src/main/java/com/moviebooking/ai/BookingTools.java) `holdSeatsFn()` | Calls `bookingService.holdSeats(...)` — same pessimistic lock, same transactions |
+| **AI routes through real service** | [`BookingTools.java`](src/main/java/com/moviebooking/ai/BookingTools.java) `holdSeats()` | Calls `bookingService.holdSeats(...)` — same pessimistic lock, same transactions |
 | **Graceful degradation** | [`BookingAssistantService.java`](src/main/java/com/moviebooking/ai/BookingAssistantService.java) constructor | `chatClient` is null when `GEMINI_API_KEY` is absent; returns clear error message |
 | **Endpoint** | [`BookingAssistantController.java`](src/main/java/com/moviebooking/ai/BookingAssistantController.java) | `POST /api/assistant` — accepts natural language, returns AI response |
+
+---
+
+## MCP (Model Context Protocol) Server
+
+Spring AI 1.0.0 exposes the same five booking tools over MCP so any MCP-compatible client
+(Claude Desktop, custom agents, IDE plugins) can orchestrate them without going through the REST API.
+
+### Architecture
+
+```
+External MCP Client (e.g. Claude Desktop)
+    │  SSE connection
+    ▼
+GET /mcp/sse  ─── Spring AI MCP Server (SSE transport, Servlet/SseEmitter)
+POST /mcp/messages                │
+                                  │  discovers ToolCallbackProvider bean
+                          McpServerConfig.bookingMcpTools()
+                                  │
+                          BookingTools (@Tool methods)
+                                  │
+                          BookingService  ← same pessimistic lock + @Transactional
+                                  │
+                          PostgreSQL (SELECT … FOR UPDATE)
+```
+
+Key point: the concurrency guarantees from Priority 1 hold at every entry point — REST API,
+agentic assistant, and MCP. Business logic lives in exactly one place.
+
+### Tool Definitions
+
+All tools are defined in [`BookingTools.java`](src/main/java/com/moviebooking/ai/BookingTools.java)
+and registered for MCP via [`McpServerConfig.java`](src/main/java/com/moviebooking/ai/McpServerConfig.java).
+
+| MCP Tool | Parameters | Description | Concurrency safety |
+|----------|-----------|-------------|-------------------|
+| `searchMovies` | `keyword: String` | Find movies by title or genre keyword | Read-only |
+| `listShows` | `movieId: Long` | Upcoming shows for a movie | Read-only |
+| `checkSeatAvailability` | `showId: Long` | Available seats with IDs, codes, types, prices | Read-only |
+| `holdSeats` | `userId: Long`, `showId: Long`, `showSeatIds: List<Long>` | Reserve seats — IDs must come from `checkSeatAvailability` | **`SELECT FOR UPDATE` pessimistic lock** |
+| `confirmBooking` | `bookingId: Long`, `userId: Long` | Finalise a held booking within 5-minute TTL | `@Transactional` |
+
+### Connecting a client
+
+**Claude Desktop** (`~/.claude/claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "movie-booking": {
+      "url": "http://localhost:8080/mcp/sse"
+    }
+  }
+}
+```
+
+**curl smoke test** (lists registered MCP tools):
+```bash
+curl -N http://localhost:8080/mcp/sse &
+curl -X POST http://localhost:8080/mcp/messages \
+     -H 'Content-Type: application/json' \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+### Mirrors production MCP orchestration patterns
+
+This follows the same layering used in production multi-agent systems: a domain service
+exposed first as a REST API (Priority 1), then as an LLM-callable tool via an agentic
+assistant (Priority 2), then as an MCP server so any compliant client can use it
+(Priority 3) — without duplicating business logic at any layer.
 
 ---
 
@@ -98,3 +168,101 @@ in this project to the exact file(s) where a reviewer can verify it.
 | Local dev one-command startup | [`docker-compose.yml`](docker-compose.yml) |
 | Env-var only config (no hardcoding) | [`application-prod.yml`](src/main/resources/application-prod.yml) — `${SPRING_DATASOURCE_URL}` etc. |
 | Dynamic PORT from Render | [`application.yml`](src/main/resources/application.yml) `server.port: ${PORT:8080}` |
+
+---
+
+## Future Scope (Planned — Not Yet Implemented)
+
+### 1. JWT Authentication *(Priority 1)*
+
+**Concept:** Stateless auth using signed tokens. User logs in → server issues a JWT → client sends it on every request as `Authorization: Bearer <token>`.
+
+**Flow:**
+```
+POST /api/auth/register  → hash password (BCrypt), save user, return JWT
+POST /api/auth/login     → verify password, return JWT
+All other endpoints      → JwtFilter validates token, extracts userId from claims
+```
+
+**Key components:**
+- `spring-boot-starter-security` + `jjwt` (io.jsonwebtoken)
+- `JwtFilter extends OncePerRequestFilter` — validates token, sets `SecurityContext`
+- `SecurityConfig` — whitelist `/api/auth/**`, `/swagger-ui/**`; protect everything else
+- Extract `userId` from JWT claims instead of trusting it from the request body
+
+**Why it matters:** Closes the "anyone can book as any user" security hole. Very common interview topic.
+
+---
+
+### 2. Redis Caching *(Priority 2)*
+
+**Concept:** Cache expensive read queries in memory so repeated requests skip the database.
+
+**What to cache:**
+- `GET /api/movies` — movie list (invalidate on add/update)
+- `GET /api/movies/{id}/shows` — shows for a movie
+- `GET /api/shows/{id}/seats` — seat availability (short TTL ~30s, changes fast)
+
+**Key components:**
+- `spring-boot-starter-data-redis`
+- `@EnableCaching` on main class
+- `@Cacheable("movies")` on service methods
+- `@CacheEvict` on write operations
+
+**Hosting:** Upstash Redis — free tier, works with Render via `REDIS_URL` env var.
+
+---
+
+### 3. Prometheus + Grafana Monitoring *(Priority 3)*
+
+**Concept:** Expose app metrics (request count, latency, JVM memory, DB pool) → scrape with Prometheus → visualize in Grafana.
+
+**What to add (Actuator already present):**
+- `micrometer-registry-prometheus` dependency
+- Expose `/actuator/prometheus` in `application.yml`
+- Custom metrics: bookings per minute, seat hold rate, AI tool call latency
+
+**Hosting:** Grafana Cloud free tier (includes Prometheus scraping). Import Spring Boot dashboard ID: 12900.
+
+---
+
+### 4. Kafka *(Priority 4)*
+
+**Concept:** Async event streaming. Booking actions publish events; consumers process them independently.
+
+**Flow:**
+```
+BookingService.confirmBooking()
+  → publish BookingConfirmedEvent to topic "booking-events"
+    → NotificationConsumer  (email/SMS)
+    → AnalyticsConsumer     (stats)
+    → AuditConsumer         (audit log)
+```
+
+**Key components:**
+- `spring-kafka`
+- `BookingEventProducer` — publishes after confirm
+- `BookingEventConsumer` — listens and processes
+- Event schema: `{ bookingId, userId, movieTitle, showTime, seats, totalAmount, timestamp }`
+
+**Hosting:** Upstash Kafka — free tier, serverless, works with Render env vars.
+
+---
+
+### 5. WebSockets — Real-time Seat Updates *(Priority 5)*
+
+**Concept:** Push real-time seat availability to all users viewing a show — when someone holds a seat, everyone else sees it go unavailable instantly.
+
+**Flow:**
+```
+User A holds seat A1
+  → BookingService.holdSeats() completes
+    → SeatUpdatePublisher pushes to /topic/show/{showId}
+      → All connected frontends update their seat map
+```
+
+**Key components:**
+- `spring-boot-starter-websocket`
+- `WebSocketConfig` — STOMP over `/ws`, broker on `/topic`
+- `SeatUpdatePublisher` — `SimpMessagingTemplate` called after hold/confirm/expire
+- Frontend: SockJS + STOMP.js, subscribe to `/topic/show/{showId}`
