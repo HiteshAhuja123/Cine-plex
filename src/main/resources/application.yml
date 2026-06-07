@@ -40,7 +40,10 @@ spring:
       chat:
         options:
           model: gemini-2.0-flash
-          temperature: 0.7
+          # Keep temperature low — tool calling requires deterministic JSON output.
+          # 0.7 causes Gemini to emit <function=name{...}> text-format calls instead
+          # of proper JSON, resulting in HTTP 400 tool_use_failed from the API.
+          temperature: 0.1
     mcp:
       server:
         name: movie-booking-mcp-server

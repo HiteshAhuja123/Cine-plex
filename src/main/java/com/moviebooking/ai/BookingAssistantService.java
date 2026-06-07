@@ -42,6 +42,8 @@ public class BookingAssistantService {
             3. Do not invent movie titles, show times, or seat IDs. Only use IDs returned by tools.
             4. If the user asks to "book" something, complete the full flow through confirmBooking unless they say "hold only".
             5. Summarise the final booking: movie, time, theater, seats, total amount.
+            6. CRITICAL: invoke tools using the structured JSON tool-call mechanism only. Never write tool calls as \
+            <function=name{...}> or any XML/text format — that format is invalid and will cause an error.
             """;
 
     private final ChatClient chatClient;
