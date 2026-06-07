@@ -1057,11 +1057,25 @@
         <div class="modal-title">Welcome to CinePlex</div>
         <div class="modal-sub">Sign in to hold and confirm seats</div>
         <div class="modal-tabs">
-            <div class="modal-tab active" id="tab-register" onclick="switchTab('register')">Register</div>
-            <div class="modal-tab" id="tab-existing" onclick="switchTab('existing')">Have an ID?</div>
+            <div class="modal-tab active" id="tab-signin" onclick="switchTab('signin')">Sign In</div>
+            <div class="modal-tab" id="tab-register" onclick="switchTab('register')">New Account</div>
         </div>
 
-        <div class="tab-pane active" id="pane-register">
+        <div class="tab-pane active" id="pane-signin">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input" id="signin-email" type="email" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeAuthModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="loginByEmail()">Sign In</button>
+            </div>
+            <div style="margin-top:12px;font-size:0.78rem;color:var(--text-3);text-align:center">
+                No account yet? <span style="color:var(--gold);cursor:pointer" onclick="switchTab('register')">Create one →</span>
+            </div>
+        </div>
+
+        <div class="tab-pane" id="pane-register">
             <div class="form-group">
                 <label class="form-label">Name *</label>
                 <input class="form-input" id="reg-name" type="text" placeholder="Your full name" autocomplete="off">
@@ -1080,19 +1094,6 @@
             </div>
         </div>
 
-        <div class="tab-pane" id="pane-existing">
-            <div class="form-group">
-                <label class="form-label">User ID</label>
-                <input class="form-input" id="existing-id" type="number" min="1" placeholder="e.g. 1, 2, or 3">
-                <div style="margin-top:6px;font-size:0.75rem;color:var(--text-3)">
-                    Seeded users: Alice = 1 &nbsp;·&nbsp; Bob = 2 &nbsp;·&nbsp; Carol = 3
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="closeAuthModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="loginById()">Sign In</button>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -1311,15 +1312,32 @@ function navigate(where) {
 }
 
 // ── AUTH ──────────────────────────────────────────────────────────────────
-function openAuthModal() { document.getElementById('auth-modal').hidden = false; }
+function openAuthModal() {
+    switchTab('signin');
+    document.getElementById('signin-email').value = '';
+    document.getElementById('auth-modal').hidden = false;
+}
 function closeAuthModal() { document.getElementById('auth-modal').hidden = true; }
 function onBackdropClick(e) { if (e.target === e.currentTarget) closeAuthModal(); }
 
 function switchTab(tab) {
-    ['register', 'existing'].forEach(function(t) {
+    ['signin', 'register'].forEach(function(t) {
         document.getElementById('tab-' + t).classList.toggle('active', t === tab);
         document.getElementById('pane-' + t).classList.toggle('active', t === tab);
     });
+}
+
+async function loginByEmail() {
+    const email = document.getElementById('signin-email').value.trim();
+    if (!email) { toast('Enter your email address', 'error'); return; }
+    try {
+        const user = await api('GET', '/users/by-email?email=' + encodeURIComponent(email));
+        setUser(user.id, user.name);
+        closeAuthModal();
+        toast('Welcome back, ' + user.name + '!', 'success');
+    } catch(e) {
+        toast(e.message || 'No account found for that email', 'error');
+    }
 }
 
 async function registerUser() {
@@ -1335,16 +1353,6 @@ async function registerUser() {
     } catch(e) { toast(e.message, 'error'); }
 }
 
-async function loginById() {
-    const id = parseInt(document.getElementById('existing-id').value, 10);
-    if (!id || id < 1) { toast('Enter a valid user ID', 'error'); return; }
-    try {
-        const user = await api('GET', '/users/' + id);
-        setUser(user.id, user.name);
-        closeAuthModal();
-        toast('Welcome back, ' + user.name + '!', 'success');
-    } catch(e) { toast(e.message, 'error'); }
-}
 
 function setUser(id, name) {
     S.userId = id;
@@ -2022,9 +2030,10 @@ function getSteps(e) {
         ];
     }
 
-    if (m === 'GET' && /\/users\/\d+/.test(p)) {
-        return [{ c:'s-sql', t:'SELECT * FROM users WHERE id=?' }];
+    if (m === 'GET' && p.indexOf('/users/by-email') >= 0) {
+        return [{ c:'s-sql', t:'SELECT * FROM users WHERE email=?' }];
     }
+
 
     if (m === 'POST' && p.indexOf('/assistant') >= 0) {
         return [

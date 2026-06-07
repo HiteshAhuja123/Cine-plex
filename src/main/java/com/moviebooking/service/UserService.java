@@ -39,6 +39,13 @@ public class UserService {
                 .orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
+    @Transactional(readOnly = true)
+    public UserResponse getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .map(UserMapper::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("No account found for email: " + email));
+    }
+
     /** Package-private — used by BookingService to validate user existence without mapping. */
     @Transactional(readOnly = true)
     public User getEntityById(Long id) {

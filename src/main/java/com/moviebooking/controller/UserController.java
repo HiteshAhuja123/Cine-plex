@@ -7,11 +7,14 @@ import com.moviebooking.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 /** User registration — simplified (no auth) to keep scope tight. */
+@Validated
 @RestController
 @RequestMapping("/api/users")
 @Tag(name = "Users", description = "User registration and lookup")
@@ -43,5 +46,15 @@ public class UserController {
     @Operation(summary = "Get user by ID")
     public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResponse.success(userService.getUserById(id)));
+    }
+
+    /**
+     * Look up an existing account by email — used for sign-in without a password.
+     */
+    @GetMapping("/by-email")
+    @Operation(summary = "Find user by email (sign-in)")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByEmail(
+            @RequestParam @Email(message = "must be a valid email address") String email) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getUserByEmail(email)));
     }
 }
