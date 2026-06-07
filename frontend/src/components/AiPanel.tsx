@@ -18,7 +18,7 @@ export function AiPanel() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: 'Hi! I can help you book seats. Try: "Book 2 seats for Inception" or "Find a sci-fi show".\n\nRequires sign-in + GEMINI_API_KEY on the server.',
+      text: 'Hi! I can help you book seats. Try: "Book 2 seats for Inception" or "Find a sci-fi show".',
     },
   ]);
   const [loading, setLoading] = useState(false);
