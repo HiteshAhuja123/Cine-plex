@@ -30,7 +30,7 @@ export function Nav() {
 
   return (
     <>
-      <nav className="sticky top-0 z-[100] bg-[var(--surface)] border-b border-[var(--border)] px-4 md:px-6 h-14 flex items-center gap-3">
+      <nav className="sticky top-0 z-[100] bg-[var(--surface)] border-b border-[var(--border)] px-4 md:px-6 h-14 flex items-center gap-3 overflow-hidden">
         {/* Logo */}
         <Link href="/" className="flex-shrink-0">
           <span className="text-xl font-black text-[var(--red)] tracking-tight">
@@ -79,7 +79,7 @@ export function Nav() {
         <div className="hidden md:block">
           {userId ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-[var(--green)] border border-[var(--green)] rounded-full px-3 py-1 font-medium">
+              <span className="text-sm text-[var(--green)] border border-[var(--green)] rounded-full px-3 py-1 font-medium max-w-[120px] truncate">
                 {userName}
               </span>
               <button
