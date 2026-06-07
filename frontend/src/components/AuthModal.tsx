@@ -14,7 +14,7 @@ interface AuthModalProps {
 
 export function AuthModal({ open, onClose }: AuthModalProps) {
   const { setUser, toast } = useApp();
-  const [tab, setTab] = useState<"register" | "existing">("register");
+  const [tab, setTab] = useState<"register" | "existing">("existing");
   const [loading, setLoading] = useState(false);
 
   // Register form
@@ -23,7 +23,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   const [phone, setPhone] = useState("");
 
   // Existing user form
-  const [userId, setUserId] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
 
   async function handleRegister() {
     if (!name.trim() || !email.trim()) {
@@ -48,19 +48,18 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
   }
 
   async function handleLogin() {
-    const id = parseInt(userId, 10);
-    if (!id || id < 1) {
-      toast("Enter a valid user ID", "error");
+    if (!loginEmail.trim()) {
+      toast("Enter your email address", "error");
       return;
     }
     setLoading(true);
     try {
-      const user = await api.get<User>(`/users/${id}`);
+      const user = await api.get<User>(`/users/by-email?email=${encodeURIComponent(loginEmail.trim())}`);
       setUser(user.id, user.name);
       toast(`Welcome back, ${user.name}!`, "success");
       onClose();
     } catch (e: unknown) {
-      toast(e instanceof Error ? e.message : "Login failed", "error");
+      toast(e instanceof Error ? e.message : "No account found with that email", "error");
     } finally {
       setLoading(false);
     }
@@ -106,7 +105,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   className={`flex-1 py-2 rounded-md text-sm font-semibold transition-all
                     ${tab === t ? "bg-[var(--surface)] text-[var(--text)]" : "text-[var(--text-2)] hover:text-[var(--text)]"}`}
                 >
-                  {t === "register" ? "Register" : "Have an ID?"}
+                  {t === "register" ? "Register" : "Sign In"}
                 </button>
               ))}
             </div>
@@ -144,10 +143,7 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
                   transition={{ duration: 0.15 }}
                   className="space-y-3"
                 >
-                  <Field label="User ID" type="number" value={userId} onChange={setUserId} placeholder="e.g. 1, 2, or 3" />
-                  <p className="text-xs text-[var(--text-3)]">
-                    Seeded users: Alice = 1 · Bob = 2 · Carol = 3
-                  </p>
+                  <Field label="Email" type="email" value={loginEmail} onChange={setLoginEmail} placeholder="your@email.com" />
                   <div className="flex gap-2 pt-2">
                     <button onClick={onClose} className="btn-secondary flex-1 py-2 rounded-lg text-sm font-semibold">Cancel</button>
                     <button
