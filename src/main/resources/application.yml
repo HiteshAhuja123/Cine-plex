@@ -35,7 +35,7 @@ spring:
       base-url: https://api.groq.com/openai
       chat:
         options:
-          model: llama-3.3-70b-versatile
+          model: llama3-groq-70b-8192-tool-use-preview
           # Keep temperature low — tool calling requires deterministic JSON output.
           temperature: 0.1
     mcp:

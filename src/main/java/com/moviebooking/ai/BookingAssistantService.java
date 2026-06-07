@@ -93,13 +93,13 @@ public class BookingAssistantService {
                     .call()
                     .content();
 
-            return new AssistantResponse(reply, true, "gemini-2.0-flash");
+            return new AssistantResponse(reply, true, "llama3-groq-70b-tool-use");
 
         } catch (Exception e) {
             log.error("[Assistant] Error: {}", e.getMessage(), e);
             return new AssistantResponse(
                     "Sorry, the assistant encountered an error: " + e.getMessage(),
-                    false, "gemini-2.0-flash");
+                    false, "llama3-groq-70b-tool-use");
         }
     }
 }
