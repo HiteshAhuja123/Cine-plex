@@ -8,6 +8,21 @@ import { api } from "@/lib/api";
 import type { Movie, Page } from "@/lib/types";
 import { MovieCardSkeleton, Spinner } from "@/components/Spinner";
 
+const STATIC_MOVIES: Movie[] = [
+  { id: 1,  title: "Avengers: Endgame",        genre: "Action",   language: "English", durationMinutes: 181, averageRating: 4.8 },
+  { id: 2,  title: "The Dark Knight",           genre: "Action",   language: "English", durationMinutes: 152, averageRating: 4.9 },
+  { id: 3,  title: "Inception",                 genre: "Sci-Fi",   language: "English", durationMinutes: 148, averageRating: 4.7 },
+  { id: 4,  title: "Interstellar",              genre: "Sci-Fi",   language: "English", durationMinutes: 169, averageRating: 4.8 },
+  { id: 5,  title: "Spider-Man: No Way Home",   genre: "Action",   language: "English", durationMinutes: 148, averageRating: 4.6 },
+  { id: 6,  title: "The Shawshank Redemption",  genre: "Drama",    language: "English", durationMinutes: 142, averageRating: 4.9 },
+  { id: 7,  title: "Pulp Fiction",              genre: "Thriller", language: "English", durationMinutes: 154, averageRating: 4.7 },
+  { id: 8,  title: "The Godfather",             genre: "Drama",    language: "English", durationMinutes: 175, averageRating: 4.9 },
+  { id: 9,  title: "Oppenheimer",               genre: "Drama",    language: "English", durationMinutes: 180, averageRating: 4.7 },
+  { id: 10, title: "Parasite",                  genre: "Thriller", language: "Korean",  durationMinutes: 132, averageRating: 4.8 },
+  { id: 11, title: "Top Gun: Maverick",         genre: "Action",   language: "English", durationMinutes: 131, averageRating: 4.6 },
+  { id: 12, title: "Dune: Part Two",            genre: "Sci-Fi",   language: "English", durationMinutes: 166, averageRating: 4.7 },
+];
+
 const GRADIENT_PALETTES = [
   "linear-gradient(135deg,#1a1a3e,#2d1b5c)",
   "linear-gradient(135deg,#0e2a1a,#1a4a2e)",
@@ -191,17 +206,18 @@ export default function MoviesPage() {
       </div>
 
       {/* Grid */}
-      {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <MovieCardSkeleton key={i} />
-          ))}
-        </div>
-      ) : waking ? (
-        <div className="flex flex-col items-center gap-3 py-20 text-[var(--text-2)]">
-          <Spinner size={28} />
-          <p className="text-sm font-medium">Waking up the server, one moment…</p>
-          <p className="text-xs text-[var(--text-3)]">Free-tier backends sleep after inactivity.</p>
+      {(loading || waking) && !data ? (
+        <div>
+          {/* Wake-up banner */}
+          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-xs text-[var(--text-2)]">
+            <Spinner size={13} />
+            <span>Waking up the server — live data coming shortly…</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 opacity-50 pointer-events-none">
+            {STATIC_MOVIES.map((movie) => (
+              <MovieCard key={movie.id} movie={movie} onClick={() => {}} />
+            ))}
+          </div>
         </div>
       ) : error ? (
         <div className="text-center py-16">

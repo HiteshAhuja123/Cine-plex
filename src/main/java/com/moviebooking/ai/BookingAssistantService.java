@@ -93,13 +93,13 @@ public class BookingAssistantService {
                     .call()
                     .content();
 
-            return new AssistantResponse(reply, true, "llama-3.1-70b-versatile");
+            return new AssistantResponse(reply, true, "llama-3.3-70b-versatile");
 
         } catch (Exception e) {
             log.error("[Assistant] Error: {}", e.getMessage(), e);
             return new AssistantResponse(
                     "Sorry, the assistant encountered an error: " + e.getMessage(),
-                    false, "llama-3.1-70b-versatile");
+                    false, "llama-3.3-70b-versatile");
         }
     }
 }
